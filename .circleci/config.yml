@@ -12,8 +12,7 @@ jobs:
           name: test_init
           command: |
             cd laradock && \
-              docker-compose run workspace php artisan key:generate 
-              /var/www/vendor/bin/phpunit'
+              docker-compose run workspace php artisan key:generate
       - run:
           name: test
           command: |
