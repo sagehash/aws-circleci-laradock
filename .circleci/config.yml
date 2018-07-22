@@ -10,7 +10,7 @@ jobs:
           command: cd laradock && docker-compose build nginx workspace php-fpm
       - run:
           name: docker-compose up
-          command: cd laradock && docker-compose up workspace
+          command: cd laradock && docker-compose up -d workspace
       - run:
           name: test
           command: cde laradock && docker-compose exec --user=laradock workspace /var/www/vendor/bin/phpunit
