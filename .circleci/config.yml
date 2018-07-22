@@ -9,11 +9,6 @@ jobs:
           name: docker-compose build
           command: cd laradock && docker-compose build nginx workspace php-fpm
       - run:
-          name: test_init
-          command: |
-            cd laradock && \
-              docker-compose run workspace php artisan key:generate
-      - run:
           name: test
           command: |
             cd laradock && \
