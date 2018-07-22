@@ -37,16 +37,9 @@ jobs:
               docker load -i ~/caches/images.tar
             fi
       - run:
-          name: Setup Laravel
-          command: |
-            docker-compose run app composer install
-            cp .env.circleci .env
-            docker-compose run app php artisan key:generate
-            docker-compose run app php artisan migrate:refresh --seed
-      - run:
           name: Run Test
           command: |
-            docker-compose run app vendor/bin/phpunit
+            cd laradock && docker-compose run workspace phpunit
 workflows:
   version: 2
   build_and_test:
