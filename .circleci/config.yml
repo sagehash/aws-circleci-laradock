@@ -1,14 +1,57 @@
-version: 2
+versin: 2
 jobs:
-  build:
-    docker:
-      - image: debian:stretch
+  generate_cache:
+    machine: true
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - docker-{{ .Branch }}--{{ checksum ".circleci/config.yml" }}--{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}
+          paths:
+            - ~/caches/images.tar
       - run:
-          name: Greeting
-          command: echo Hello, world.
+          name: Setup docker
+          command: |
+            if [ ! -f ~/caches/images.tar ]; then
+              cd laradock && docker-compose build nginx workspace php-fpm
+              mkdir -p ~/caches
+              docker save $(docker images | awk 'NR>=2 && ! /^<none>/{print $1}') -o ~/caches/images.tar
+            fi
+      - save_cache:
+          key: docker-{{ .Branch }}--{{ checksum ".circleci/config.yml" }}--{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}
+          paths:
+            - ~/caches/images.tar
+  test:
+    machine: true
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - docker-{{ .Branch }}--{{ checksum ".circleci/config.yml" }}--{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}
+          paths:
+            - ~/caches/images.tar
       - run:
-          name: Print the Current Time
-          command: date
-
+          name: docker load
+          command: |
+            if [[ -e ~/caches/images.tar ]]; then
+              docker load -i ~/caches/images.tar
+            fi
+      - run:
+          name: Setup Laravel
+          command: |
+            docker-compose run app composer install
+            cp .env.circleci .env
+            docker-compose run app php artisan key:generate
+            docker-compose run app php artisan migrate:refresh --seed
+      - run:
+          name: Run Test
+          command: |
+            docker-compose run app vendor/bin/phpunit
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - generate_cache
+      - test:
+          requires:
+            - generate_cache
